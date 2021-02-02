@@ -15,7 +15,7 @@ import mysql.connector
 
 # CONFIGURATION PARAMETERS
 
-pathToChrome = "/home/aabella/programs/chromedriver/chromedriver"  # path to the executable version of chrome browser for webdriver. It has to be customized for the execution
+pathToChrome = "/home/aabella/programs/chromedriver/chromedriver"  # path to the executable version of chrome browser for webdriver
 
 
 # ENTRY POINT
@@ -23,11 +23,11 @@ pathToChrome = "/home/aabella/programs/chromedriver/chromedriver"  # path to the
 
 def scraping(request):
     # Load env variables for database connection
-    DIBA_USERNAME = "XXXXX"
-    DIBA_PASSWORD = "XXXXX"
-    DIBA_HOST = "XXXXX"
-    DIBA_PORT = "3306"
-    DIBA_DATABASE = "XXXXX"
+    DIBA_USERNAME = "XX"
+    DIBA_PASSWORD = "XX"
+    DIBA_HOST = "XX"
+    DIBA_PORT = "XX"
+    DIBA_DATABASE = "XX"
 
     # Obtain connection variable
     cnx = mysql.connector.connect(
@@ -48,7 +48,7 @@ def scraping(request):
     mercats = load_mercats(cnx)
     cnx.close()
     print(mercats)
-    limit = 133 # number of markets 
+    limit = 133
     mercats = mercats[:min(limit, len(mercats))]
 
     mercats_str = [mercat[1] for mercat in mercats]
