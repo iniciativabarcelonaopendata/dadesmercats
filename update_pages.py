@@ -34,13 +34,13 @@ def post_page(wpUrl, wpUserName, wpPassword, articleTitle, articleContent):
 
 wpUrl = "http://dadesmercatsdiba.cat/xmlrpc.php"
 
-DIBA_USERNAME = "XXX"
-DIBA_PASSWORD = "XXX"
-DIBA_HOST = "XXX"
+DIBA_USERNAME = "XX"
+DIBA_PASSWORD = "XX"
+DIBA_HOST = "XX"
 DIBA_PORT = "3306"
-DIBA_DATABASE = "XXX"
-SITE_USER = "XXXX"
-SITE_PASS = "XXX"
+DIBA_DATABASE = "XX"
+SITE_USER = "XX"
+SITE_PASS = "XX"
 client = Client(wpUrl, SITE_USER, SITE_PASS)
 
 
@@ -48,11 +48,11 @@ def clean_custom_fields(postId, pattern):
     # this function removed the previous custom fields of a page
     # specifically designed for removing the CODE_XXX codes necessary for the bokeh visualization
     # this function to run hast to whitelist the IP from where is executed
-    HOST = "XXX"
+    HOST = "XX"
     PORT = "3306"
-    DDBB = "XXXX"
-    USER = "XXXX"
-    PASS = "XXX"
+    DDBB = "XX"
+    USER = "XX"
+    PASS = "XX"
 
     if postId is None:
         return "wrong id"
@@ -91,68 +91,73 @@ bokehJs = """
     """
 
 # retrieve the pages of the mercats
-start = 3
-end = 132
+start = 100
+end = 101
 counter = 0
-limit = 300
+limit = min(132, 1000)
 
-for marketId in range(start, end):
-    if counter > limit:
+for marketId in range(limit):
+    if counter < start:
+        counter += 1
+        print(counter)
+        continue
+    elif counter > end:
         break
     else:
         counter += 1
-    dataBase = mysql.connector.connect(host=DIBA_HOST, user=DIBA_USERNAME, password=DIBA_PASSWORD, database=DIBA_DATABASE)
-    query = "SELECT `mercats`.`id`, `page_id`, `html`, `timestamp`, `mercats`.`nom`, `municipi`, `cens`, `renda_familiar`, `lloguer_mensual`, `index_envelliment`, `dia_mercat` FROM `mercatspages`, `plots`, `mercats`, `municipis` WHERE `mercatspages`.`mercat_id` = `plots`.`added_parameters` AND `mercatspages`.`mercat_id` = `mercats`.`id` AND `municipis`.`nom` = `mercats`.`municipi` AND `mercatspages`.`mercat_id` = " + str(marketId)
-    cursorObject = dataBase.cursor()
-    cursorObject.execute(query)
-    result = cursorObject.fetchall()
-    cursorObject.close()
-    dataBase.close()
+        dataBase = mysql.connector.connect(host=DIBA_HOST, user=DIBA_USERNAME, password=DIBA_PASSWORD, database=DIBA_DATABASE)
+        query = "SELECT `mercats`.`id`, `page_id`, `html`, `timestamp`, `mercats`.`nom`, `municipi`, `cens`, `renda_familiar`, `lloguer_mensual`, `index_envelliment`, `dia_mercat` FROM `mercatspages`, `plots`, `mercats`, `municipis` WHERE `mercatspages`.`mercat_id` = `plots`.`added_parameters` AND `mercatspages`.`mercat_id` = `mercats`.`id` AND `municipis`.`nom` = `mercats`.`municipi` AND `mercatspages`.`mercat_id` = " + str(marketId)
+        print(query)
+        cursorObject = dataBase.cursor()
+        cursorObject.execute(query)
+        result = cursorObject.fetchall()
+        cursorObject.close()
+        dataBase.close()
 
-    firstGraph = True
-    graphCounter = 0
-    customFields = []
-    for register in result:  # it will be 3 graphs
-        print(register)
-        id_ = str(register[0])
-        pageId = str(register[1])
-        graphHtml = str(register[2])
-        timestamp = str(register[3])
-        marketName = str(register[4])
-        city = str(register[5])
-        population = str(register[6])
-        familyRent = str(register[7])
-        monthlyInstallment = str(register[8])
-        aging = str(register[9])
-        marketDay = str(register[10])
+        firstGraph = True
+        graphCounter = 0
+        customFields = []
+        for register in result:  # it will be 3 graphs
+            print(register)
+            id_ = str(register[0])
+            pageId = str(register[1])
+            graphHtml = str(register[2])
+            timestamp = str(register[3])
+            marketName = str(register[4])
+            city = str(register[5])
+            population = str(register[6])
+            familyRent = str(register[7])
+            monthlyInstallment = str(register[8])
+            aging = str(register[9])
+            marketDay = str(register[10])
 
-        newCode = "CODE_main_map_" + str(id_) + "-" + str(graphCounter)
-        graphCounter += 1
-        if firstGraph:
-            content = "La ciutat <b>" + city + "</b> té una població de <b>" + population + "</b> habitants amb un índex d'envelliment de <b>" + aging + "</b><br>"
-            content += "La seva renda és de <b>" + familyRent + "</b><br>"
-            if len(marketDay) > 1:
-                content += "Hi ha mercat <b>" + marketDay + "</b>"
+            newCode = "CODE_main_map_" + str(id_) + "-" + str(graphCounter)
+            graphCounter += 1
+            if firstGraph:
+                content = "La ciutat <b>" + city + "</b> té una població de <b>" + "{:,}".format(int(population)).replace(",", ".") + "</b> habitants amb un índex d'envelliment de <b>" + aging + "</b><br>"
+                content += "La seva renda és de <b>" + familyRent + "</b><br>"
+                if len(marketDay) > 1:
+                    content += "Hi ha mercat <b>" + marketDay + "</b>"
+                else:
+                    content += "No està disponible els dies de mercat"
+                content += "<br><br>Aquestes dades són relatives, no absolutes; per a una franja horària donada, l’afluència es calcula en una escala de 0 a 100, on 100 és el moment de més afluència de tota la setmana, i 0 és el moment en què el mercat està buit. <br>Això ens permet realitzar anàlisis comparatives.<br>"
+                content += "<br> {{CODE_load_bokeh-" + str(marketId) + "}} "
+                content += "{{" + newCode + "}}" + "<br>"
+                firstGraph = False
+                customFields = [{"key": "CODE_load_bokeh-" + str(marketId), "value": bokehJs}, {"key": newCode, "value": graphHtml}]
             else:
-                content += "No està disponible els dies de mercat"
-            content += "<br><br>Aquestes dades són relatives, no absolutes; per a una franja horària donada, l’afluència es calcula en una escala de 0 a 100, on 100 és el moment de més afluència de tota la setmana, i 0 és el moment en què el mercat està buit. <br>Això ens permet realitzar anàlisis comparatives.<br>"
-            content += "<br> {{CODE_load_bokeh-" + str(marketId) + "}} "
-            content += "{{" + newCode + "}}" + "<br>"
-            firstGraph = False
-            customFields = [{"key": "CODE_load_bokeh-" + str(marketId), "value": bokehJs}, {"key": newCode, "value": graphHtml}]
-        else:
-            content += "{{" + newCode + "}}" + "<br>"
-            customFields.append({"key": newCode, "value": graphHtml})
+                content += "{{" + newCode + "}}" + "<br>"
+                customFields.append({"key": newCode, "value": graphHtml})
 
-        print("el contenido es " + content)
+            print("el contenido es " + content)
 
-    pageEdited = WordPressPage()
-    pageEdited.content = content
-    pageEdited.title = marketName
-    pageEdited.custom_fields = customFields
-    clean_custom_fields(pageId, "")
-    client.call(posts.EditPost(pageId, pageEdited))
-    time.sleep(30)
+        pageEdited = WordPressPage()
+        pageEdited.content = content
+        pageEdited.title = marketName
+        pageEdited.custom_fields = customFields
+        clean_custom_fields(pageId, "")
+        client.call(posts.EditPost(pageId, pageEdited))
+        time.sleep(30)
 
 
 
